@@ -12,7 +12,8 @@ class Index(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Add in a QuerySet of all the books
-        context['water_level']  = json.dumps(list(Record.objects.values_list('water_level', flat=True)))
+        context['water_level']  = json.dumps(list(reversed(
+            Record.objects.values_list('water_level', flat=True).order_by('-id')[:12])))
         context['rainfall']  = Record.objects.values_list('rainfall_intensity', flat=True)
         return context
 
