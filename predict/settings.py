@@ -125,3 +125,13 @@ STATIC_URL = '/static/'
 
 ASGI_APPLICATION = 'predict.routing.application'
 # WSGI_APPLICATION = 'predict.wsgi.application'
+# Channel layers to enable multiple instances of same consumer to communicate
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)]
+        },
+    },
+}
+

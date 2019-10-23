@@ -460,4 +460,19 @@
     <!-- Page level custom scripts -->
     <script src="{% static 'js/demo/chart-area-demo.js' %}"></script>
     <script src="{% static 'js/demo/chart-pie-demo.js' %}"></script>
+  <script>
+    var chatSocket = new WebSocket('ws://' + window.location.host + '/data/');
+
+      chatSocket.onmessage = function(e) {
+          const _data = JSON.parse(e.data);
+          const _message = _data['message'];
+          const new_data = [...data.slice(1), _message]
+          console.log("yeah goan")
+          addData(myLineChart, _message)
+      };
+
+      chatSocket.onclose = function(e) {
+          console.error('Chat socket closed unexpectedly');
+      };
+  </script>
 {% endblock %}

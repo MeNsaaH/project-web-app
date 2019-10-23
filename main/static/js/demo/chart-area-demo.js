@@ -116,3 +116,11 @@ var myLineChart = new Chart(ctx, {
     }
   }
 });
+
+function addData(chart, data) {
+//    chart.data.labels.push(label);
+    chart.data.datasets.forEach((dataset) => {
+        dataset.data = [...dataset.data.slice(1), data]
+    });
+    chart.update();
+}
