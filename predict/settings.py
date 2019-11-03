@@ -25,7 +25,7 @@ SECRET_KEY = 'n&0%t$sh(9to4bxab7#7dp9iw8q#4_@8^%gktxt9)st(#!b190'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -134,4 +135,23 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+# Twilio Settings
+TWILIO_SID = "AC3c9b10da63571365cad2526fc0ad86f0"
+TWILIO_TOKEN = "ff6715168e05cbe908760dcc1152da8f"
+TWILIO_SOURCE = "(334) 708-3103"
+TWILIO_DESTINATION = "+2348176410891"
+
+DATASET_DIR = os.path.join(BASE_DIR, 'dataset')
+
+
+# Celery Settings
+
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_TIMEZONE = TIME_ZONE
 
