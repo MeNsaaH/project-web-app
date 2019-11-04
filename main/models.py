@@ -46,11 +46,12 @@ class Notification(models.Model):
     """
     message = models.TextField()
     date_created = models.DateTimeField(auto_now_add=True)
+    read = models.BooleanField(default=False)
 
     
     @classmethod
     def send(cls, prediction=None, sms=True):
-        message = f"There is an impending Flood at {prediction.date_predicted}"
+        message = f"There is an impending Flood at {prediction.date_predicted.strftime('%D %H:%M:%S')}"
         notification = cls.objects.create(message=message)
         # TODO Send Email
         if sms:

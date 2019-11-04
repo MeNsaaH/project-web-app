@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.views.generic import TemplateView
 from rest_framework import viewsets
 
-from main.models import Record, Prediction
+from main.models import Record, Prediction, Notification
 from main.serializers import RecordSerializer
 from main.utils.predictor import get_state, get_state_str
 
@@ -28,6 +28,7 @@ class Index(TemplateView):
         context['measured_rainfall'] = Record.objects.values_list('rainfall_intensity', flat=True)
         context['time_type'] = 'am' if last_hour <= 12 else 'pm'
         context['next_state'] = predictions[norm_last_hour - 1]
+        context['notifications'] = Notification.objects.filter(read=False)[:5]
         context['current_water_level'] = int((current_obj.water_level/settings.DRAIN_HEIGHT) * 100)
         return context
 
