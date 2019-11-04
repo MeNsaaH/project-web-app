@@ -27,7 +27,7 @@ app.conf.beat_schedule = {
     # Execute every hour
     'get-prediction': {
         'task': 'main.tasks.get_prediction',
-        'schedule': crontab(hour='*/1'),
+        'schedule': crontab(minute='*/5'),
     }
 }
 

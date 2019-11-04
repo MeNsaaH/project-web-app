@@ -12,19 +12,6 @@
         <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
           <i class="fa fa-bars"></i>
         </button>
-
-{% comment %}        <!-- Topbar Search -->{% endcomment %}
-{% comment %}        <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">{% endcomment %}
-{% comment %}          <div class="input-group">{% endcomment %}
-{% comment %}            <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..." aria-label="Search" aria-describedby="basic-addon2">{% endcomment %}
-{% comment %}            <div class="input-group-append">{% endcomment %}
-{% comment %}              <button class="btn btn-primary" type="button">{% endcomment %}
-{% comment %}                <i class="fas fa-search fa-sm"></i>{% endcomment %}
-{% comment %}              </button>{% endcomment %}
-{% comment %}            </div>{% endcomment %}
-{% comment %}          </div>{% endcomment %}
-{% comment %}        </form>{% endcomment %}
-
         <!-- Topbar Navbar -->
         <ul class="navbar-nav ml-auto">
 
@@ -244,11 +231,11 @@
                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Current Water Level</div>
                     <div class="row no-gutters align-items-center">
                       <div class="col-auto">
-                        <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">80%</div>
+                        <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ current_water_level }}</div>
                       </div>
                       <div class="col">
                         <div class="progress progress-sm mr-2">
-                          <div class="progress-bar bg-info" role="progressbar" style="width: 80%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                          <div class="progress-bar bg-info" role="progressbar" style="width: {{ current_water_level }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
                       </div>
                     </div>
@@ -267,10 +254,16 @@
               <div class="card-body">
                 <div class="row no-gutters align-items-center">
                   <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Next Hour Water Level</div>
+                    {% if next_state == 'flooded' %}
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Next Hour State</div>
+                    {% elif next_state == 'almost_flooded' %}
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Next Hour State</div>
+                    {% else %}
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Next Hour State</div>
+                    {% endif %}
                     <div class="row no-gutters align-items-center">
                       <div class="col-auto">
-                        <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">90%</div>
+                        <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ next_state|title }}</div>
                       </div>
                       <div class="col">
                         <div class="progress progress-sm mr-2">
@@ -290,7 +283,6 @@
 
 
         <!-- Content Row -->
-
         <div class="row">
 
           <!-- Area Chart -->
@@ -322,6 +314,37 @@
           </div>
 
         </div>
+        <div class="row">
+
+          <!-- Area Chart -->
+          <div class="col-xl-12 col-lg-12">
+            <div class="card shadow mb-4">
+              <!-- Card Header - Dropdown -->
+              <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Flood State</h6>
+                <div class="dropdown no-arrow">
+                  <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                  </a>
+                  <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Dropdown Header:</div>
+                    <a class="dropdown-item" href="#">Action</a>
+                    <a class="dropdown-item" href="#">Another action</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#">Something else here</a>
+                  </div>
+                </div>
+              </div>
+              <!-- Card Body -->
+              <div class="card-body">
+                <div class="chart-area2">
+                  <canvas id="myAreaChart2"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
 
         <!-- Content Row -->
         
@@ -337,7 +360,9 @@
     {{ block.super }}
     <script>
       var data = {{ measured_water_level|safe }}
-      var predictedData = {{ predicted_water_level|safe }}
+      var predictedFloodState = {{ predictions|safe }}
+      var measuredFloodState = {{ measured_flood_state|safe }}
+      var time_type = "{{ time_type }}"
     </script>
   
     <!-- Page level plugins -->
@@ -350,10 +375,15 @@
     var chatSocket = new WebSocket('ws://' + window.location.host + '/data/');
 
       chatSocket.onmessage = function(e) {
+          console.log(e);
           const _data = JSON.parse(e.data);
-          const _message = _data['message'];
-          const new_data = [...data.slice(1), _message]
-          addData(myLineChart, _message)
+          if (_data['prediction_update']){
+            window.location.reload()
+          }
+          const _level= _data['water_level'];
+          const _state= _data['water_state'];
+          addData(myLineChart, _level)
+          addData(myLineChart2, _state)
       };
 
       chatSocket.onclose = function(e) {

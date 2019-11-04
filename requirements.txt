@@ -3,3 +3,4 @@ django-channels
 djangorestframework
 channels_redis
 twilo
+-e git+https://github.com/MeNsaaH/transitionMatrix

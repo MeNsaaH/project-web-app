@@ -1,4 +1,4 @@
-date,Rainfall,Dam cap,Forestcov,Flointen
+date,Rainfall,Dam cap,WaterLevel,State
 1957-01-02 00:00:00,17.2,2763.966,32.516,0
 1957-04-02 01:00:00,477.1,2763.966,32.616,0
 1957-08-02 02:00:00,2107.4,2763.966,32.716,3513
