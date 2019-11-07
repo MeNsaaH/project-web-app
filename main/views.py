@@ -35,12 +35,11 @@ class Index(TemplateView):
             weekly_avg = Record.objects.filter(
                 date_created__gte=week
                 ).aggregate(Avg("water_level"))['water_level__avg']
-            context["daily_avg"] = daily_avg or "N/A"
-            context["weekly_avg"] = weekly_avg
+            context["daily_avg"] = "N/A" if not daily_avg else int(daily_avg)
+            context["weekly_avg"] = int(weekly_avg)
             context['measured_water_level'] = json.dumps(measured_water_level)
             context['measured_flood_state'] = json.dumps([get_state(x) for x in measured_water_level])
             context['predictions'] = json.dumps(predictions)
-            context['measured_rainfall'] = Record.objects.values_list('rainfall_intensity', flat=True)
             context['time_type'] = 'am' if last_hour <= 12 else 'pm'
             context['next_state'] = predictions[norm_last_hour - 1]
             context['notifications'] = Notification.objects.filter(read=False)[:5]
