@@ -1,5 +1,7 @@
 import json
 from django.conf import settings
+from django.db.models import Avg
+from django.utils import timezone
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from rest_framework import viewsets
@@ -23,6 +25,18 @@ class Index(TemplateView):
                 Record.objects.values_list('water_level', flat=True).order_by('-id')[:last_hour]))
             predictions = [get_state_str(x) for x in reversed(
                 Prediction.objects.values_list('prediction', flat=True).order_by('-id')[:12])]
+            today = timezone.now()
+            week = today - timezone.timedelta(days=7)
+            daily_avg = Record.objects.filter(
+                date_created__year=today.year, 
+                date_created__month=today.month, 
+                date_created__day=today.day).aggregate(
+                        Avg("water_level"))['water_level__avg']
+            weekly_avg = Record.objects.filter(
+                date_created__gte=week
+                ).aggregate(Avg("water_level"))['water_level__avg']
+            context["daily_avg"] = daily_avg or "N/A"
+            context["weekly_avg"] = weekly_avg
             context['measured_water_level'] = json.dumps(measured_water_level)
             context['measured_flood_state'] = json.dumps([get_state(x) for x in measured_water_level])
             context['predictions'] = json.dumps(predictions)
