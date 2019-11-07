@@ -7,3 +7,4 @@ channels_redis
 twilio
 numpy
 pandas
+redis

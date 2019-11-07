@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from celery import shared_task
 from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.utils import timezone
 from main.models import Record, Prediction
@@ -36,7 +37,7 @@ def get_prediction():
             date_predicted=timezone.now() + timezone.timedelta(hours=i)
         )
     channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
+    async_to_sync(channel_layer.group_send)(
             'data_results',
             {
                 'type': 'prediction_message',
