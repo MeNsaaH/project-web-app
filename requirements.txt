@@ -4,7 +4,7 @@ django-celery-results
 django-channels
 djangorestframework
 channels_redis
-twilio
 numpy
 pandas
 redis
+nexmo

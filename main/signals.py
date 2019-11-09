@@ -20,11 +20,3 @@ def send_websocket_message(sender, **kwargs):
                 'water_state': get_state(instance.water_level)
             }
         )
-
-
-@receiver(post_save, sender=Prediction)
-def send_notifications_on_prediction(sender, **kwargs):
-    if kwargs['created']:
-        instance = kwargs['instance']
-        if instance.is_flood():
-            Notification.send(prediction=instance, sms=True)

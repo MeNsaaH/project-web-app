@@ -1,5 +1,5 @@
 from django.db import models
-from main.utils.twilio import TwilioSMS
+from main.utils.nexmo import NexmoSMS
 from main.utils.predictor import States, get_state
 
 
@@ -53,6 +53,6 @@ class Notification(models.Model):
         notification = cls.objects.create(message=message)
         # TODO Send Email
         if sms:
-            twilio = TwilioSMS()
-            twilio.send_message(notification.message)
+            nexmo = NexmoSMS()
+            nexmo.send_message(notification.message)
 

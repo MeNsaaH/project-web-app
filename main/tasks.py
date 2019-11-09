@@ -10,7 +10,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.utils import timezone
-from main.models import Record, Prediction
+from main.models import Record, Prediction, Notification
 from main.utils.predictor import TransitionMatrix, MarkovChainPredictor, get_state
 
 
@@ -30,17 +30,23 @@ def get_prediction():
     predictions = predictor.generate_states(current_state, no_predictions=24)
     # All predictions for a markov model should use the same uid
     uid = uuid.uuid4()
+    send_sms = True
     for i, prediction in enumerate(predictions):
-        Prediction.objects.create(
+        pred = Prediction.objects.create(
             uid=uid,
             prediction=prediction[0].upper(),
             date_predicted=timezone.now() + timezone.timedelta(hours=i)
         )
+        if pred.is_flood():
+            # Send SMS once after a set of prediction
+            # Don't bump the user with excess SMSs
+            Notification.send(prediction=pred, sms=send_sms)
+            send_sms = False
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
-            'data_results',
-            {
-                'type': 'prediction_message',
-                'prediction_update': 'true'
-            }
-        )
+        'data_results',
+        {
+            'type': 'prediction_message',
+            'prediction_update': 'true'
+        }
+    )
