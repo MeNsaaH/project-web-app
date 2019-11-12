@@ -30,22 +30,22 @@ def get_state(value):
         return States.FLOODED
 
 
-def min_max_scaler(X):
+def min_max_scaler(X, max_height):
     """ Return min-max scaler for the dataframe """
     min_ = 0
     max_ = 1
-    X_std = (X - X.min(axis=0)) / (settings.DRAIN_HEIGHT - X.min(axis=0))
+    X_std = (X - X.min(axis=0)) / (max_height - X.min(axis=0))
     return X_std * (max_ - min_) + min_
 
 
 class TransitionMatrix:
     """ Generates the Transition Matrix for the given Dataset """
     
-    def __init__(self, data):
+    def __init__(self, data, max_height=settings.DRAIN_HEIGHT):
         """ Initialize the necessary Variables """
         
         # Normalize Water Level data using MinMax Algorithm
-        data["WaterLevel"] = min_max_scaler(data["WaterLevel"].values)
+        data["WaterLevel"] = min_max_scaler(data["WaterLevel"].values, max_height)
         criteria = [
             data['WaterLevel'].le(0.75), 
             data['WaterLevel'].between(0.75, 0.98), 
@@ -71,7 +71,7 @@ class TransitionMatrix:
         # Calculate the Probability of Transition based on data from transtions
         df = pd.DataFrame(self.transitions)
         for i in range(df.shape[0]):
-            df.iloc[i] = df.iloc[i]/df.iloc[i].sum()
+            df.iloc[i] = df.iloc[i]/(df.iloc[i].sum() or 1)
         return df.values
     
 
