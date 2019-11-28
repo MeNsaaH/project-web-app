@@ -1,6 +1,7 @@
 from django.conf import settings
 import numpy as np
 import pandas as pd
+from numpy.linalg import matrix_power
 
 
 class States:
@@ -8,7 +9,8 @@ class States:
     NORMAL = 'normal'
     ALMOST_FLOODED = 'almost_flooded'
     FLOODED = 'flooded'
-
+    INDICES = {NORMAL: 0, ALMOST_FLOODED:1, FLOODED: 2}
+    NAMES = dict((v,k) for k,v in INDICES.items())
 
 def get_state_str(value):
     """ get the state for which value is in """
@@ -54,7 +56,6 @@ class TransitionMatrix:
         data['state'] = np.select(criteria, state_values, 0)
         data["next_state"] =  data["state"].shift()
         self.data = data
-        self.states_dict = {"normal": 0, "almost_flooded":1, "flooded": 2}
         self.transitions =  {"normal": {}, "almost_flooded":{}, "flooded": {}}
 
 
@@ -63,8 +64,8 @@ class TransitionMatrix:
 
 
         # Check for transitions between states and store count
-        for i in self.states_dict.items():
-            for j in self.states_dict.items():
+        for i in States.INDICES.items():
+            for j in States.INDICES.items():
                 self.transitions[i[0]][j[0]] = self.data[
                         (self.data["state"] == i[1]) & (self.data["next_state"] == j[1])].shape[0]
 
@@ -82,12 +83,13 @@ class TransitionMatrix:
     
     @property
     def states(self):
-        return list(self.states_dict.keys())
+        return list(States.INDICES.keys())
         
 
     def representation(self):
         return pd.DataFrame(self.transitions)
 
+    
 class MarkovChainPredictor:
     """ The Markov Chain Model Predictor """
 
@@ -107,12 +109,13 @@ class MarkovChainPredictor:
         """
         self.transition_matrix = np.atleast_2d(transition_matrix)
         self.states = states
-        self.index_dict = {self.states[index]: index for index in 
-                           range(len(self.states))}
-        self.state_dict = {index: self.states[index] for index in
-                           range(len(self.states))}
  
-    def next_state(self, current_state):
+    def get_current_state_vector(self, current_state):
+        v_state = np.zeros([3])
+        v_state[States.INDICES[current_state]] = 1
+        return v_state
+
+    def next_state(self, current_state, time_step=1):
         """
         Returns the state of the random variable at the next time 
         instance.
@@ -122,10 +125,10 @@ class MarkovChainPredictor:
         current_state: str
             The current state of the system.
         """
-        return np.random.choice(
-             self.states, 
-             p=self.transition_matrix[self.index_dict[current_state], :]
-        )
+        current_state_vector = self.get_current_state_vector(current_state)
+        a = current_state_vector.dot(matrix_power(self.transition_matrix, time_step))
+        print(a)
+        return States.NAMES[np.argmax(a)]
  
     def generate_states(self, current_state, no_predictions=10):
         """
@@ -140,8 +143,7 @@ class MarkovChainPredictor:
             The number of future states to generate.
         """
         future_states = []
-        for _ in range(no_predictions):
-            next_state = self.next_state(current_state)
+        for i in range(no_predictions):
+            next_state = self.next_state(current_state, time_step=i+1)
             future_states.append(next_state)
-            current_state = next_state
         return future_states
