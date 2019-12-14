@@ -11,7 +11,7 @@ from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.utils import timezone
 from main.models import Record, Prediction, Notification
-from main.utils.predictor import TransitionMatrix, MarkovChainPredictor, get_state
+from main.utils.predictor import TransitionMatrix, MarkovChainPredictor, States
 
 
 @shared_task
@@ -19,7 +19,7 @@ def get_prediction():
     """
     Get hourly prediction and update graphs
     """
-    current_state = get_state(Record.objects.last().water_level)
+    current_state = States.get_state(Record.objects.last().water_level)
     # Generate a Numpy Array of Records
     water_level_entries = np.array(Record.objects.values_list('water_level', flat=True))
 
@@ -27,7 +27,8 @@ def get_prediction():
     transition_matrix = TransitionMatrix(data)
 
     predictor = MarkovChainPredictor(transition_matrix.values, transition_matrix.states)
-    predictions = predictor.generate_states(current_state, no_predictions=24)
+    # For every predictions for every 3 seconds till 6hrs
+    predictions = predictor.generate_states(current_state, no_predictions=7200)
     # All predictions for a markov model should use the same uid
     uid = uuid.uuid4()
     send_sms = True

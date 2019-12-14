@@ -109,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Lagos'
 
 USE_I18N = True
 
@@ -140,10 +140,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Twilio Settings
-TWILIO_SID = "AC3c9b10da63571365cad2526fc0ad86f0"
-TWILIO_TOKEN = "ff6715168e05cbe908760dcc1152da8f"
-TWILIO_SOURCE = "(334) 708-3103"
-TWILIO_DESTINATION = "2348176410891"
 
 NEXMO_KEY = "bec0b6c4"
 NEXMO_SECRET = "S5ZBTeWOWCEPPxiD"
@@ -154,9 +150,11 @@ DATASET_DIR = os.path.join(BASE_DIR, 'dataset')
 
 # Celery Settings
 
-CELERY_BROKER_URL = 'amqp://guest:guest@localhost'
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_TIMEZONE = TIME_ZONE
 
 DRAIN_HEIGHT = 555
+
+# MCU Config
+NODE_IP_ADDRESS = "192.168.43.99"

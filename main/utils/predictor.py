@@ -2,34 +2,49 @@ from django.conf import settings
 import numpy as np
 import pandas as pd
 from numpy.linalg import matrix_power
+from functools import partial
 
 
 class States:
-    """ A Collection of all States """
+    """ A Collection of all States and Related functions"""
     NORMAL = 'normal'
     ALMOST_FLOODED = 'almost_flooded'
     FLOODED = 'flooded'
-    INDICES = {NORMAL: 0, ALMOST_FLOODED:1, FLOODED: 2}
+    
+    INDICES = {NORMAL: 0, ALMOST_FLOODED: 1, FLOODED: 2}
     NAMES = dict((v,k) for k,v in INDICES.items())
-
-def get_state_str(value):
-    """ get the state for which value is in """
-    if value == 'N':
-        return States.NORMAL
-    elif value == 'A':
-        return States.ALMOST_FLOODED
-    else:
-        return States.FLOODED
-
-def get_state(value):
-    """ get the state for which value is in """
-    norm_value = value/settings.DRAIN_HEIGHT
-    if norm_value < 0.75:
-        return States.NORMAL
-    elif 0.75 < norm_value < 0.98:
-        return States.ALMOST_FLOODED
-    else:
-        return States.FLOODED
+    SHORT_NAMES = {'N': NORMAL, 'A': ALMOST_FLOODED, 'F': 'FLOODED'}
+    TRANSITIONS = {NORMAL: {}, ALMOST_FLOODED: {}, FLOODED: {}}
+    
+    normal_criteria = lambda data: data.le(0.75)
+    almost_flooded_criteria = lambda data: data.between(0.75, 0.98)
+    flooded_criteria = lambda data: data.gt(0.75)
+    # Some serious abuse of class methods around here ¯\_(ツ)_/¯ 
+    
+    @classmethod
+    def get_criteria(cls, data):
+        return [
+            States.normal_criteria(data),
+            States.almost_flooded_criteria(data),
+            States.flooded_criteria(data)
+        ]
+    
+    @classmethod
+    def get_states(cls, data, type="index"):
+        """ return the states for data """
+        x = cls.INDICES.values() if type == "index" else cls.INDICES.keys()
+        return np.select(cls.get_criteria(data), list(x), 0)
+    
+    @classmethod
+    def get_state_str(cls, value):
+        """ get the state for which value is in """
+        return cls.SHORT_NAMES[value]
+    
+    @classmethod
+    def get_state(cls, value):
+        """ get the state for which value is in """
+        index = cls.get_states(pd.DataFrame([value])[0])
+        return cls.NAMES[index[0]]
 
 
 def min_max_scaler(X, max_height):
@@ -48,20 +63,13 @@ class TransitionMatrix:
         
         # Normalize Water Level data using MinMax Algorithm
         data["WaterLevel"] = min_max_scaler(data["WaterLevel"].values, max_height)
-        criteria = [
-            data['WaterLevel'].le(0.75), 
-            data['WaterLevel'].between(0.75, 0.98), 
-            data['WaterLevel'].ge(0.98)]
-        state_values = [0, 1, 2]
-        data['state'] = np.select(criteria, state_values, 0)
-        data["next_state"] =  data["state"].shift()
+        data['state'] = States.get_states(data["WaterLevel"])
+        data["next_state"] = data["state"].shift()
         self.data = data
-        self.transitions =  {"normal": {}, "almost_flooded":{}, "flooded": {}}
-
+        self.transitions = States.TRANSITIONS
 
     def generate(self):
         """ Generate the Transition Matrix """
-
 
         # Check for transitions between states and store count
         for i in States.INDICES.items():
@@ -74,7 +82,6 @@ class TransitionMatrix:
         for i in range(df.shape[0]):
             df.iloc[i] = df.iloc[i]/(df.iloc[i].sum() or 1)
         return df.values
-    
 
     @property
     def values(self):
@@ -85,7 +92,6 @@ class TransitionMatrix:
     def states(self):
         return list(States.INDICES.keys())
         
-
     def representation(self):
         return pd.DataFrame(self.transitions)
 
@@ -111,7 +117,7 @@ class MarkovChainPredictor:
         self.states = states
  
     def get_current_state_vector(self, current_state):
-        v_state = np.zeros([3])
+        v_state = np.zeros([len(States.INDICES.keys())])
         v_state[States.INDICES[current_state]] = 1
         return v_state
 
@@ -127,7 +133,6 @@ class MarkovChainPredictor:
         """
         current_state_vector = self.get_current_state_vector(current_state)
         a = current_state_vector.dot(matrix_power(self.transition_matrix, time_step))
-        print(a)
         return States.NAMES[np.argmax(a)]
  
     def generate_states(self, current_state, no_predictions=10):

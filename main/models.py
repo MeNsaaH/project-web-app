@@ -1,6 +1,9 @@
+import requests
 from django.db import models
+from django.conf import settings
+from django.utils import timezone
 from main.utils.nexmo import NexmoSMS
-from main.utils.predictor import States, get_state
+from main.utils.predictor import States
 
 
 class Record(models.Model):
@@ -14,7 +17,7 @@ class Record(models.Model):
 
     @property
     def state(self):
-        return get_state(self.water_level)
+        return States.get_state(self.water_level)
 
 
 class Prediction(models.Model):
@@ -23,8 +26,7 @@ class Prediction(models.Model):
     """
     STATES = (
         ('N', States.NORMAL),
-        ('A', States.ALMOST_FLOODED),
-        ('F', States.FLOODED),
+        ('A', States.ALMOST_FLOODED), ('F', States.FLOODED),
     )
     date_created = models.DateTimeField(auto_now_add=True)
     prediction = models.CharField(max_length=1, choices=STATES)
@@ -55,4 +57,6 @@ class Notification(models.Model):
         if sms:
             nexmo = NexmoSMS()
             nexmo.send_message(notification.message)
+            requests.get(f"http://{settings.NODE_IP_ADDRESS}/update", 
+                    params={"sleep_time", (prediction.date_predicted - timezone.now()).total_seconds})
 

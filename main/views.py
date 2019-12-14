@@ -8,7 +8,7 @@ from rest_framework import viewsets
 
 from main.models import Record, Prediction, Notification
 from main.serializers import RecordSerializer
-from main.utils.predictor import get_state, get_state_str
+from main.utils.predictor import States 
 
 
 class Index(TemplateView):
@@ -19,15 +19,13 @@ class Index(TemplateView):
         current_obj = Record.objects.last()
         if current_obj:
             last_hour = current_obj.date_created.hour
-            norm_last_hour = last_hour if last_hour <= 12 else last_hour - 12
+            norm_last_hour = 12
             # Add in a QuerySet of all the books
             measured_water_level = list(reversed(
                 Record.objects.values_list('water_level', flat=True).order_by('-id')[:last_hour]))
             predictions = list(reversed(
                 Prediction.objects.values_list('prediction', flat=True).order_by('-id')[:12]))
-            json_predictions = json.dumps([get_state_str(x) for x in predictions ])
-            last_id = Prediction.objects.last().id
-            start_prediction = Prediction.objects.get(id=last_id-12)
+            json_predictions = json.dumps([States.get_state_str(x) for x in predictions ])
             today = timezone.now()
             week = today - timezone.timedelta(days=7)
             daily_avg = Record.objects.filter(
@@ -39,12 +37,13 @@ class Index(TemplateView):
                 date_created__gte=week
                 ).aggregate(Avg("water_level"))['water_level__avg']
             context["daily_avg"] = "N/A" if not daily_avg else int(daily_avg)
-            context["weekly_avg"] = weekly_avg
+            context["weekly_avg"] = int(weekly_avg)
             context['measured_water_level'] = json.dumps(measured_water_level)
-            context['measured_flood_state'] = json.dumps([get_state(x) for x in measured_water_level])
+            context['measured_flood_state'] = json.dumps([States.get_state(x) for x in measured_water_level])
             context['predictions'] = json_predictions
             context['time_type'] = 'am' if last_hour <= 12 else 'pm'
-            context['next_state'] = predictions[norm_last_hour - 1]
+            context['next_state'] = None if not predictions else \
+                    States.SHORT_NAMES[predictions[norm_last_hour - 1]]
             context['notifications'] = Notification.objects.filter(read=False)[:5]
             context['current_water_level'] = int((current_obj.water_level/settings.DRAIN_HEIGHT) * 100)
         return context
